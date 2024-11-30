@@ -1,0 +1,64 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from shapely.geometry import Polygon, Point
+
+# 正方形の辺の長さ
+square_side = 10
+
+# 円の半径
+circle1_radius = 2
+circle2_radius = 3
+
+# 円の中心座標の初期値（正方形の外側）
+circle1_x0 = square_side + circle1_radius
+circle1_y0 = square_side / 3
+circle2_x0 = square_side + circle2_radius
+circle2_y0 = 2 * square_side / 3
+
+# 円の速度
+circle1_speed = 0.5  #単位時間当たりの移動距離
+circle2_speed = 0.3  #単位時間当たりの移動距離
+
+# 時間の範囲（円が完全に正方形を通過して外に出るまでの時間）
+time_steps = np.arange(0, (square_side + 2 * max(circle1_radius, circle2_radius)) / min(circle1_speed, circle2_speed), 0.1)
+
+# 重なり合う面積の推移を格納するリスト
+overlap_areas_circle1 = []
+overlap_areas_circle2 = []
+total_overlap_areas = []
+
+# 正方形の頂点を定義
+square = Polygon([(0, 0), (square_side, 0), (square_side, square_side), (0, square_side)])
+
+for t in time_steps:
+    # 時刻tにおける円の中心座標
+    circle1_x = circle1_x0 - circle1_speed * t
+    circle1_y = circle1_y0
+    circle2_x = circle2_x0 - circle2_speed * t
+    circle2_y = circle2_y0
+
+    # 円の領域を定義
+    circle1 = Point(circle1_x, circle1_y).buffer(circle1_radius)
+    circle2 = Point(circle2_x, circle2_y).buffer(circle2_radius)
+
+    # 円と正方形の重なり合う面積を計算
+    overlap_area_circle1 = square.intersection(circle1).area
+    overlap_area_circle2 = square.intersection(circle2).area
+
+    # 合計の重なり合う面積を計算
+    total_overlap_area = overlap_area_circle1 + overlap_area_circle2
+
+    overlap_areas_circle1.append(overlap_area_circle1)
+    overlap_areas_circle2.append(overlap_area_circle2)
+    total_overlap_areas.append(total_overlap_area)
+
+# グラフを描画
+plt.plot(time_steps, overlap_areas_circle1, label="Circle 1 Overlap Area")
+plt.plot(time_steps, overlap_areas_circle2, label="Circle 2 Overlap Area")
+plt.plot(time_steps, total_overlap_areas, label="Total Overlap Area", linestyle='--')
+plt.xlabel("Time")
+plt.ylabel("Overlap Area")
+plt.title("Overlap Area between Square and Moving Circles")
+plt.legend()
+plt.grid(True)
+plt.show()
