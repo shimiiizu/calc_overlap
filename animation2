@@ -1,0 +1,111 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from shapely.geometry import Polygon, Point
+import matplotlib.patches as patches
+import matplotlib.animation as animation
+
+# 正方形の辺の長さ
+square_side = 10
+
+# 円の半径
+circle1_radius = 1
+circle2_radius = 2
+
+# 円の中心座標の初期値（正方形の外側）
+circle1_x0 = -5
+circle1_y0 = square_side / 3
+circle2_x0 = -10
+circle2_y0 = square_side
+
+# 円の速度
+circle1_speed = 1  # 単位時間当たりの移動距離
+circle2_speed = 1  # 単位時間当たりの移動距離
+
+# 時間の範囲（円が完全に正方形を通過して外に出るまでの時間）
+time_steps = np.arange(0, 6, 0.1)
+
+# 重なり合う面積の推移を格納するリスト
+overlap_areas_circle1 = []
+overlap_areas_circle2 = []
+total_overlap_areas = []
+
+# 正方形の頂点を定義
+square = Polygon([(0, 0), (square_side, 0), (square_side, square_side), (0, square_side)])
+
+# アニメーションのセットアップ
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 12))
+
+# 初期位置の図を描画
+square_patch = patches.Rectangle((0, 0), square_side, square_side, edgecolor='black', facecolor='gray', alpha=0.5)
+circle1_patch = patches.Circle((circle1_x0, circle1_y0), circle1_radius, edgecolor='red', facecolor='red', alpha=0.5)
+circle2_patch = patches.Circle((circle2_x0, circle2_y0), circle2_radius, edgecolor='blue', facecolor='blue', alpha=0.5)
+
+ax1.add_patch(square_patch)
+ax1.add_patch(circle1_patch)
+ax1.add_patch(circle2_patch)
+
+ax1.set_xlim(-15, square_side + 5)
+ax1.set_ylim(-5, square_side + 5)
+ax1.set_aspect('equal', 'box')
+ax1.set_xlabel("x")
+ax1.set_ylabel("y")
+ax1.set_title("Circles Moving Through Square")
+
+# グラフの初期設定
+line1, = ax2.plot([], [], 'r', label="Circle 1 Overlap Area")
+line2, = ax2.plot([], [], 'b', label="Circle 2 Overlap Area")
+line3, = ax2.plot([], [], 'g--', label="Total Overlap Area")
+ax2.set_xlim(0, max(time_steps))
+ax2.set_ylim(0, 20)  # 最大面積は円の面積
+ax2.set_xlabel("Time")
+ax2.set_ylabel("Overlap Area")
+ax2.set_title("Overlap Area between Square and Moving Circles")
+ax2.legend()
+ax2.grid(True)
+
+
+def init():
+    line1.set_data([], [])
+    line2.set_data([], [])
+    line3.set_data([], [])
+    return line1, line2, line3
+
+
+def animate(t):
+    # 時刻tにおける円の中心座標
+    circle1_x = circle1_x0 + circle1_speed * t
+    circle1_y = circle1_y0
+    circle2_x = circle2_x0 + circle2_speed * t
+    circle2_y = circle2_y0
+
+    # 円の位置を更新
+    circle1_patch.center = (circle1_x, circle1_y)
+    circle2_patch.center = (circle2_x, circle2_y)
+
+    # 円の領域を定義
+    circle1 = Point(circle1_x, circle1_y).buffer(circle1_radius)
+    circle2 = Point(circle2_x, circle2_y).buffer(circle2_radius)
+
+    # 円と正方形の重なり合う面積を計算
+    overlap_area_circle1 = square.intersection(circle1).area
+    overlap_area_circle2 = square.intersection(circle2).area
+
+    # 合計の重なり合う面積を計算
+    total_overlap_area = overlap_area_circle1 + overlap_area_circle2
+
+    # 重なり合う面積をリストに追加
+    overlap_areas_circle1.append(overlap_area_circle1)
+    overlap_areas_circle2.append(overlap_area_circle2)
+    total_overlap_areas.append(total_overlap_area)
+
+    # グラフのデータを更新
+    line1.set_data(time_steps[:t + 1], overlap_areas_circle1[:t + 1])
+    line2.set_data(time_steps[:t + 1], overlap_areas_circle2[:t + 1])
+    line3.set_data(time_steps[:t + 1], total_overlap_areas[:t + 1])
+
+    return circle1_patch, circle2_patch, line1, line2, line3
+
+
+ani = animation.FuncAnimation(fig, animate, init_func=init, frames=len(time_steps), interval=50, blit=True)
+
+plt.show()
